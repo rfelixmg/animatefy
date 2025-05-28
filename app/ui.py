@@ -14,12 +14,12 @@ padding = 20  # Padding around canvas content
 recording = False
 record_start_time = None
 
-def create_sidebar_icon(parent_frame, canvas, images):
+def create_sidebar_icon(parent_frame, canvas, images, hotkey=None):
     thumbnail = images[0].resize((48, 48))
     thumbnail_tk = ImageTk.PhotoImage(thumbnail)
 
     def on_click(event):
-        DraggableObject(canvas, images, x=150, y=150)
+        DraggableObject(canvas, images, x=150, y=150, hotkey=hotkey)
 
     label = tk.Label(parent_frame, image=thumbnail_tk, bg="lightgray", cursor="hand2")
     label.image = thumbnail_tk
@@ -42,6 +42,11 @@ def on_key_press(event, canvas):
         DraggableObject.selected_object.toggle_state()
     elif event.keysym.lower() == "l" and DraggableObject.selected_object:
         DraggableObject.selected_object.toggle_lock()
+    # Handle character hotkeys
+    elif event.keysym in ["1", "2"]:
+        obj = DraggableObject.get_by_hotkey(event.keysym)
+        if obj:
+            obj.set_selected()
 
 def delete_selected():
     if DraggableObject.selected_object:

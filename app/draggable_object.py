@@ -7,8 +7,9 @@ import threading
 class DraggableObject:
     selected_object = None
     instances = []  # Track all instances
+    hotkey_map = {}  # Map hotkeys to object types
 
-    def __init__(self, canvas, images, x=100, y=100):
+    def __init__(self, canvas, images, x=100, y=100, hotkey=None):
         self.canvas = canvas
         self.original_images = images  # keep originals
         self.current_scale = 1.0
@@ -18,6 +19,11 @@ class DraggableObject:
         self.original_pos = (x, y)
         self.is_shaking = False
         self.is_resizing = False  # Track if we're resizing via shift+drag
+        self.hotkey = hotkey
+
+        # Register hotkey if provided
+        if hotkey:
+            DraggableObject.hotkey_map[hotkey] = self
 
         self.tk_images = self._generate_tk_images()
 
@@ -176,6 +182,9 @@ class DraggableObject:
         self.update_resize_handle()
 
     def delete(self):
+        # Remove hotkey mapping
+        if self.hotkey:
+            DraggableObject.hotkey_map.pop(self.hotkey, None)
         # Unbind shift key events
         self.canvas.unbind_all("<Shift-Key>")
         self.canvas.unbind_all("<KeyRelease-Shift_L>")
@@ -239,4 +248,12 @@ class DraggableObject:
             self.is_shaking = False
 
         # Run shake animation in a separate thread
-        threading.Thread(target=shake_animation).start() 
+        threading.Thread(target=shake_animation).start()
+
+    @classmethod
+    def get_by_hotkey(cls, key):
+        return cls.hotkey_map.get(key)
+
+    def get_canvas_order(self):
+        """Get the canvas stacking order of this object"""
+        return self.canvas.find_withtag(self.id)[0] 

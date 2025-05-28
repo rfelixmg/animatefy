@@ -2,6 +2,24 @@ import tkinter as tk
 from PIL import Image
 from app.ui import setup_ui, create_sidebar_icon
 
+def load_character_images(character_name):
+    """Load all images for a character from the src directory"""
+    images = []
+    # Load both states of the character
+    for i in range(1, 3):  # Assuming each character has 2 states
+        img_path = f"src/{character_name}{i}.png"
+        try:
+            img = Image.open(img_path)
+            # Resize if too large
+            if img.width > 800 or img.height > 800:
+                scale = min(800 / img.width, 800 / img.height)
+                new_size = (int(img.width * scale * 0.9), int(img.height * scale * 0.9))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+            images.append(img)
+        except FileNotFoundError:
+            print(f"Warning: Could not find image {img_path}")
+    return images
+
 def main():
     # Create root window
     root = tk.Tk()
@@ -9,24 +27,22 @@ def main():
     # Setup UI
     root, sidebar, canvas, status_label = setup_ui(root)
     
-    # Load and setup images
-    metadata = {
-        'mlephy': ['mlephy1.png', 'mlephy2.png'], 
-        'pixpi': ['pixpi1.png', 'pixpi2.png'], 
-        'scenario': ['scenario.png'], 
-        'table': ['table.png']
-    }
+    # Load character images
+    mlephy_images = load_character_images("mlephy")
+    pixpi_images = load_character_images("pixpi")
 
-    for key, values in metadata.items():
-        images = []
-        for value in values:
-            img = Image.open(f"src/{value}")
-            if img.width > 800 or img.height > 800:
-                scale = min(800 / img.width, 800 / img.height)
-                new_size = (int(img.width * scale * 0.9), int(img.height * scale * 0.9))
-                img = img.resize(new_size, Image.Resampling.LANCZOS)
-            images.append(img)
-        create_sidebar_icon(sidebar, canvas, images)
+    # Create sidebar icons with hotkeys
+    create_sidebar_icon(sidebar, canvas, mlephy_images, hotkey="1")
+    create_sidebar_icon(sidebar, canvas, pixpi_images, hotkey="2")
+
+    for img_path in ['src/scenario.png', 'src/table.png']:
+        img = Image.open(img_path)
+        if img.width > 800 or img.height > 800:
+            scale = min(800 / img.width, 800 / img.height)
+            new_size = (int(img.width * scale), int(img.height * scale))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        create_sidebar_icon(sidebar, canvas, [img])
+
 
     # Start the application
     root.mainloop()

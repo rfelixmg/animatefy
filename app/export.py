@@ -13,14 +13,14 @@ def export_jpg(max_width:int = 800, max_height:int = 800, padding:int = 20):
     if not os.path.exists("exports"):
         os.makedirs("exports")
     
-    # Generate filename
-    filename = f"exports/canvas.1.jpg"
-    
     # Create a new image with canvas dimensions
     img = Image.new('RGB', (max_width - 2*padding, max_height - 2*padding), 'white')
     
-    # Get all objects from the canvas
-    for obj in DraggableObject.instances:
+    # Sort objects by their canvas order (bottom to top)
+    sorted_objects = sorted(DraggableObject.instances, key=lambda obj: obj.get_canvas_order())
+    
+    # Get all objects from the canvas in correct order
+    for obj in sorted_objects:
         # Get object position and image
         x, y = obj.pos
         # Adjust position by padding
