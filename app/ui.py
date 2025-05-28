@@ -1,9 +1,10 @@
 import tkinter as tk
+from tkinter import filedialog
 from PIL import Image, ImageTk
 import time
 import threading
 from .draggable_object import DraggableObject
-from .export import export_jpg
+from .export import export_jpg, start_recording, stop_recording, save_video_to_path
 
 # Constants
 max_width, max_height = 800, 800
@@ -11,7 +12,6 @@ padding = 20  # Padding around canvas content
 
 # Global variables
 recording = False
-recorded_frames = []
 record_start_time = None
 
 def create_sidebar_icon(parent_frame, canvas, images):
@@ -40,6 +40,8 @@ def on_key_press(event, canvas):
         DraggableObject.selected_object.delete()
     elif event.keysym == "space" and DraggableObject.selected_object:
         DraggableObject.selected_object.toggle_state()
+    elif event.keysym.lower() == "l" and DraggableObject.selected_object:
+        DraggableObject.selected_object.toggle_lock()
 
 def delete_selected():
     if DraggableObject.selected_object:
@@ -50,15 +52,34 @@ def record_loop():
         export_jpg(max_width, max_height, padding)
         time.sleep(0.1)
 
-def toggle_recording(status_label):
+def toggle_recording(status_label, record_btn):
     global recording, record_start_time
     recording = not recording
     if recording:
         record_start_time = time.time()
         update_recording_status(status_label)
+        start_recording(max_width, max_height, padding)
         threading.Thread(target=record_loop).start()
+        record_btn.config(text="Stop")
     else:
         update_recording_status(status_label)
+        stop_recording()
+        record_btn.config(text="Record")
+        status_label.config(text="Recording stopped")
+
+def export_video(status_label):
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".mp4",
+        filetypes=[("MP4 files", "*.mp4"), ("All files", "*.*")],
+        title="Save Recording As"
+    )
+    if file_path:
+        if save_video_to_path(file_path):
+            status_label.config(text=f"Recording saved to {file_path}")
+        else:
+            status_label.config(text="Error saving recording")
+    else:
+        status_label.config(text="Export cancelled")
 
 def setup_ui(root):
     # Create main window
@@ -84,11 +105,11 @@ def setup_ui(root):
 
     # Create buttons
     record_btn = tk.Button(button_frame, text="Record", 
-                          command=lambda: toggle_recording(status_label))
+                          command=lambda: toggle_recording(status_label, record_btn))
     record_btn.pack(padx=10, pady=5)
 
-    export_btn = tk.Button(button_frame, text="Export GIF", 
-                          command=lambda: print(NotImplementedError("export_video")))
+    export_btn = tk.Button(button_frame, text="Export Video", 
+                          command=lambda: export_video(status_label))
     export_btn.pack(padx=10, pady=5)
 
     # Bind keyboard events
