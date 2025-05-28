@@ -1,0 +1,97 @@
+import tkinter as tk
+from PIL import Image, ImageTk
+import time
+import threading
+from .draggable_object import DraggableObject
+from .export import export_jpg
+
+# Constants
+max_width, max_height = 800, 800
+padding = 20  # Padding around canvas content
+
+# Global variables
+recording = False
+recorded_frames = []
+record_start_time = None
+
+def create_sidebar_icon(parent_frame, canvas, images):
+    thumbnail = images[0].resize((48, 48))
+    thumbnail_tk = ImageTk.PhotoImage(thumbnail)
+
+    def on_click(event):
+        DraggableObject(canvas, images, x=150, y=150)
+
+    label = tk.Label(parent_frame, image=thumbnail_tk, bg="lightgray", cursor="hand2")
+    label.image = thumbnail_tk
+    label.pack(pady=10)
+    label.bind("<Button-1>", on_click)
+
+def update_recording_status(status_label):
+    if recording:
+        elapsed = int(time.time() - record_start_time)
+        blink = "●" if elapsed % 2 == 0 else " "
+        status_label.config(text=f"{blink} Recording... {elapsed}s")
+        status_label.after(500, lambda: update_recording_status(status_label))
+    else:
+        status_label.config(text="")
+
+def on_key_press(event, canvas):
+    if event.keysym == "Delete" and DraggableObject.selected_object:
+        DraggableObject.selected_object.delete()
+    elif event.keysym == "space" and DraggableObject.selected_object:
+        DraggableObject.selected_object.toggle_state()
+
+def delete_selected():
+    if DraggableObject.selected_object:
+        DraggableObject.selected_object.delete()
+
+def record_loop():
+    while recording:
+        export_jpg(max_width, max_height, padding)
+        time.sleep(0.1)
+
+def toggle_recording(status_label):
+    global recording, record_start_time
+    recording = not recording
+    if recording:
+        record_start_time = time.time()
+        update_recording_status(status_label)
+        threading.Thread(target=record_loop).start()
+    else:
+        update_recording_status(status_label)
+
+def setup_ui(root):
+    # Create main window
+    root.geometry("1400x800")
+    root.title("Mini Animation Tool")
+
+    # Create sidebar
+    sidebar = tk.Frame(root, width=200, bg="lightgray")
+    sidebar.pack(side="left", fill="y")
+
+    # Create canvas
+    canvas = tk.Canvas(root, width=max_width, height=max_height, bg="white")
+    canvas.pack(side="right", fill="both", expand=True)
+    canvas.create_rectangle(padding, padding, max_width - padding, max_height - padding, outline="gray")
+
+    # Create status label
+    status_label = tk.Label(canvas, text="", fg="red", font=("Arial", 12), bg="white")
+    status_label.place(relx=1.0, rely=0.0, anchor="ne", x=-10, y=10)
+
+    # Create button frame
+    button_frame = tk.Frame(sidebar, bg="lightgray")
+    button_frame.pack(pady=10)
+
+    # Create buttons
+    record_btn = tk.Button(button_frame, text="Record", 
+                          command=lambda: toggle_recording(status_label))
+    record_btn.pack(padx=10, pady=5)
+
+    export_btn = tk.Button(button_frame, text="Export GIF", 
+                          command=lambda: print(NotImplementedError("export_video")))
+    export_btn.pack(padx=10, pady=5)
+
+    # Bind keyboard events
+    root.bind("<Key>", lambda e: on_key_press(e, canvas))
+
+    return root, sidebar, canvas, status_label 
