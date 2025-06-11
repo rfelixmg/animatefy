@@ -2,6 +2,9 @@ import tkinter as tk
 from PIL import Image
 from app.ui import setup_ui, create_sidebar_icon
 
+MAX_WIDTH = 1920
+MAX_HEIGHT = 1080
+
 def load_character_images(character_name):
     """Load all images for a character from the src directory"""
     images = []
@@ -11,8 +14,8 @@ def load_character_images(character_name):
         try:
             img = Image.open(img_path)
             # Resize if too large
-            if img.width > 800 or img.height > 800:
-                scale = min(800 / img.width, 800 / img.height)
+            if img.width > MAX_WIDTH or img.height > MAX_HEIGHT:
+                scale = min(MAX_WIDTH / img.width, MAX_HEIGHT / img.height)
                 new_size = (int(img.width * scale * 0.9), int(img.height * scale * 0.9))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             images.append(img)
@@ -37,8 +40,8 @@ def main():
 
     for img_path in ['src/scenario.png', 'src/table.png', 'src/scenario2.png']:
         img = Image.open(img_path)
-        if img.width > 800 or img.height > 800:
-            scale = min(800 / img.width, 800 / img.height)
+        if img.width > MAX_WIDTH or img.height > MAX_HEIGHT:
+            scale = min(MAX_WIDTH / img.width, MAX_HEIGHT / img.height)
             new_size = (int(img.width * scale), int(img.height * scale))
             img = img.resize(new_size, Image.Resampling.LANCZOS)
         create_sidebar_icon(sidebar, canvas, [img])
