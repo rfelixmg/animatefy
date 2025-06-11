@@ -15,7 +15,7 @@ padding = 100  # Padding around canvas content
 # Global variables
 recording = False
 record_start_time = None
-thread_pool = ThreadPoolExecutor(max_workers=8)  # Limit to 4 concurrent threads
+thread_pool = None  # Initialize as None
 active_threads = set()
 
 def create_sidebar_icon(parent_frame, canvas, images, hotkey=None):
@@ -62,6 +62,12 @@ def delete_selected():
     if DraggableObject.selected_object:
         DraggableObject.selected_object.delete()
 
+def create_thread_pool():
+    global thread_pool
+    if thread_pool is None or thread_pool._shutdown:
+        thread_pool = ThreadPoolExecutor(max_workers=8)  # Limit to 8 concurrent threads
+    return thread_pool
+
 def export_frame():
     export_jpg(max_width, max_height, padding)
     # Remove this thread from active threads when done
@@ -72,7 +78,7 @@ def record_loop():
     start = time.time()
     while recording:
         # Submit frame export to thread pool
-        thread_pool.submit(export_frame)
+        create_thread_pool().submit(export_frame)
         time.sleep(frame_time)
     end = time.time()
     print(f"Total time: {end - start}")
@@ -89,8 +95,9 @@ def toggle_recording(status_label, record_btn):
     else:
         update_recording_status(status_label)
         stop_recording()
-        # Wait for all pending frame exports to complete
-        thread_pool.shutdown(wait=True)
+        # Shutdown thread pool
+        if thread_pool:
+            thread_pool.shutdown(wait=True)
         record_btn.config(text="Record")
         status_label.config(text="Recording stopped")
 
@@ -110,7 +117,7 @@ def export_video(status_label):
 
 def setup_ui(root):
     # Create main window
-    root.geometry("1920x1080")
+    root.geometry("1400x800")
     root.title("Mini Animation Tool")
 
     # Create sidebar
@@ -143,9 +150,14 @@ def setup_ui(root):
     # Create workspace border
     canvas.create_rectangle(padding, padding, max_width - padding, max_height - padding, outline="gray")
 
-    # Create status label
-    status_label = tk.Label(canvas, text="", fg="red", font=("Arial", 12), bg="white")
-    status_label.place(relx=1.0, rely=0.0, anchor="ne", x=-10, y=10)
+    # Create status label with white background
+    status_label = tk.Label(canvas, text="", fg="red", font=("Arial", 12), bg="white", padx=10, pady=5)
+    # Place status label at top center
+    def update_status_position(event=None):
+        canvas_width = canvas.winfo_width()
+        status_label.place(relx=0.5, rely=0.0, anchor="n", y=10)
+    canvas.bind("<Configure>", update_status_position)
+    update_status_position()
 
     # Create button frame
     button_frame = tk.Frame(sidebar, bg="lightgray")
