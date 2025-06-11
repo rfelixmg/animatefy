@@ -27,8 +27,15 @@ class DraggableObject:
 
         self.tk_images = self._generate_tk_images()
 
-        self.id = canvas.create_image(x, y, image=self.tk_images[self.state], anchor="nw")
-        self.pos = (x, y)
+        # Calculate workspace center offset
+        canvas_width = canvas.winfo_width()
+        canvas_height = canvas.winfo_height()
+        workspace_x = (canvas_width - 800) / 2  # 800 is max_width
+        workspace_y = (canvas_height - 800) / 2  # 800 is max_height
+
+        # Adjust initial position by workspace offset
+        self.pos = (x + workspace_x, y + workspace_y)
+        self.id = canvas.create_image(self.pos[0], self.pos[1], image=self.tk_images[self.state], anchor="nw")
         self.drag_offset = (0, 0)
         self.is_dragging = False
         self.resizing = False
@@ -256,4 +263,12 @@ class DraggableObject:
 
     def get_canvas_order(self):
         """Get the canvas stacking order of this object"""
-        return self.canvas.find_withtag(self.id)[0] 
+        return self.canvas.find_withtag(self.id)[0]
+
+    def get_workspace_position(self):
+        """Get position relative to workspace (excluding workspace offset)"""
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        workspace_x = (canvas_width - 800) / 2
+        workspace_y = (canvas_height - 800) / 2
+        return (self.pos[0] - workspace_x, self.pos[1] - workspace_y) 

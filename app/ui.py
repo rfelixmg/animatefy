@@ -9,7 +9,7 @@ from .export import export_jpg, start_recording, stop_recording, save_video_to_p
 
 # Constants
 max_width, max_height = 800, 800
-padding = 20  # Padding around canvas content
+padding = 100  # Padding around canvas content
 
 # Global variables
 recording = False
@@ -116,9 +116,30 @@ def setup_ui(root):
     sidebar = tk.Frame(root, width=200, bg="lightgray")
     sidebar.pack(side="left", fill="y")
 
-    # Create canvas
-    canvas = tk.Canvas(root, width=max_width, height=max_height, bg="white")
-    canvas.pack(side="right", fill="both", expand=True)
+    # Create canvas frame to handle centering
+    canvas_frame = tk.Frame(root, bg="lightgray")
+    canvas_frame.pack(side="right", fill="both", expand=True)
+
+    # Create canvas with fixed size
+    canvas = tk.Canvas(canvas_frame, width=max_width, height=max_height, bg="white")
+    
+    # Function to center canvas in frame
+    def center_canvas(event=None):
+        # Get frame size
+        frame_width = canvas_frame.winfo_width()
+        frame_height = canvas_frame.winfo_height()
+        
+        # Calculate position to center canvas
+        x = (frame_width - max_width) / 2
+        y = (frame_height - max_height) / 2
+        
+        # Place canvas at center
+        canvas.place(x=x, y=y)
+
+    # Bind frame resize to center canvas
+    canvas_frame.bind("<Configure>", center_canvas)
+    
+    # Create workspace border
     canvas.create_rectangle(padding, padding, max_width - padding, max_height - padding, outline="gray")
 
     # Create status label
