@@ -3,8 +3,9 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from .draggable_object import DraggableObject
-from .export import export_jpg, start_recording, stop_recording, save_video_to_path
+from .export import export_jpg, start_recording, stop_recording, save_video_to_path, toggle_pause, is_recording_paused, get_pause_duration, FPS
 
 # Constants
 max_width, max_height = 800, 800
@@ -13,6 +14,8 @@ padding = 20  # Padding around canvas content
 # Global variables
 recording = False
 record_start_time = None
+thread_pool = ThreadPoolExecutor(max_workers=8)  # Limit to 4 concurrent threads
+active_threads = set()
 
 def create_sidebar_icon(parent_frame, canvas, images, hotkey=None):
     thumbnail = images[0].resize((48, 48))
@@ -28,9 +31,13 @@ def create_sidebar_icon(parent_frame, canvas, images, hotkey=None):
 
 def update_recording_status(status_label):
     if recording:
-        elapsed = int(time.time() - record_start_time)
-        blink = "●" if elapsed % 2 == 0 else " "
-        status_label.config(text=f"{blink} Recording... {elapsed}s")
+        if is_recording_paused():
+            pause_duration = int(get_pause_duration())
+            status_label.config(text=f"⏸️ Paused... {pause_duration}s")
+        else:
+            elapsed = int(time.time() - record_start_time)
+            blink = "●" if elapsed % 2 == 0 else " "
+            status_label.config(text=f"{blink} Recording... {elapsed}s")
         status_label.after(500, lambda: update_recording_status(status_label))
     else:
         status_label.config(text="")
@@ -42,6 +49,8 @@ def on_key_press(event, canvas):
         DraggableObject.selected_object.toggle_state()
     elif event.keysym.lower() == "l" and DraggableObject.selected_object:
         DraggableObject.selected_object.toggle_lock()
+    elif event.keysym.lower() == "p" and recording:
+        toggle_pause()
     # Handle character hotkeys
     elif event.keysym in ["1", "2"]:
         obj = DraggableObject.get_by_hotkey(event.keysym)
@@ -52,10 +61,20 @@ def delete_selected():
     if DraggableObject.selected_object:
         DraggableObject.selected_object.delete()
 
+def export_frame():
+    export_jpg(max_width, max_height, padding)
+    # Remove this thread from active threads when done
+    active_threads.remove(threading.current_thread())
+
 def record_loop():
+    frame_time = 1.0 / FPS
+    start = time.time()
     while recording:
-        export_jpg(max_width, max_height, padding)
-        time.sleep(0.1)
+        # Submit frame export to thread pool
+        thread_pool.submit(export_frame)
+        time.sleep(frame_time)
+    end = time.time()
+    print(f"Total time: {end - start}")
 
 def toggle_recording(status_label, record_btn):
     global recording, record_start_time
@@ -69,6 +88,8 @@ def toggle_recording(status_label, record_btn):
     else:
         update_recording_status(status_label)
         stop_recording()
+        # Wait for all pending frame exports to complete
+        thread_pool.shutdown(wait=True)
         record_btn.config(text="Record")
         status_label.config(text="Recording stopped")
 

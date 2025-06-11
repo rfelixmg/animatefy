@@ -35,7 +35,7 @@ def main():
     create_sidebar_icon(sidebar, canvas, mlephy_images, hotkey="1")
     create_sidebar_icon(sidebar, canvas, pixpi_images, hotkey="2")
 
-    for img_path in ['src/scenario.png', 'src/table.png']:
+    for img_path in ['src/scenario.png', 'src/table.png', 'src/scenario2.png']:
         img = Image.open(img_path)
         if img.width > 800 or img.height > 800:
             scale = min(800 / img.width, 800 / img.height)
