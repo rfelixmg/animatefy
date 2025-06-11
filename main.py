@@ -2,8 +2,7 @@ import tkinter as tk
 from PIL import Image
 from app.ui import setup_ui, create_sidebar_icon
 
-MAX_WIDTH = 1920
-MAX_HEIGHT = 1080
+MAX_WIDTH, MAX_HEIGHT = 1920, 1080
 
 def load_character_images(character_name):
     """Load all images for a character from the src directory"""
@@ -38,7 +37,14 @@ def main():
     create_sidebar_icon(sidebar, canvas, mlephy_images, hotkey="1")
     create_sidebar_icon(sidebar, canvas, pixpi_images, hotkey="2")
 
-    for img_path in ['src/scenario.png', 'src/table.png', 'src/scenario2.png']:
+    for img_path in [
+        'src/scenario.png', 
+        'src/table.png', 
+        'src/scenario2.png', 
+        'src/scenario3.jpg', 
+        'src/scenario4.jpg',
+        'src/scenario5.jpg'
+    ]:
         img = Image.open(img_path)
         if img.width > MAX_WIDTH or img.height > MAX_HEIGHT:
             scale = min(MAX_WIDTH / img.width, MAX_HEIGHT / img.height)

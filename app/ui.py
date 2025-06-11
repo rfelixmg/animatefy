@@ -8,7 +8,8 @@ from .draggable_object import DraggableObject
 from .export import export_jpg, start_recording, stop_recording, save_video_to_path, toggle_pause, is_recording_paused, get_pause_duration, FPS
 
 # Constants
-max_width, max_height = 800, 800
+# max_width, max_height = 1440, 800
+max_width, max_height = 1920, 1080
 padding = 100  # Padding around canvas content
 
 # Global variables
@@ -109,7 +110,7 @@ def export_video(status_label):
 
 def setup_ui(root):
     # Create main window
-    root.geometry("1400x800")
+    root.geometry("1920x1080")
     root.title("Mini Animation Tool")
 
     # Create sidebar

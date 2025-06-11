@@ -107,6 +107,8 @@ class DraggableObject:
             x + w - 10, y + h - 10, x + w, y + h,
             fill=fill_color, outline="black", tags="resize"
         )
+        # Ensure resize handle is always above the object
+        self.canvas.tag_raise(self.resize_handle)
         self.canvas.tag_bind(self.resize_handle, "<Button-1>", self.start_resize)
         self.canvas.tag_bind(self.resize_handle, "<B1-Motion>", self.do_resize)
         self.canvas.tag_bind(self.resize_handle, "<ButtonRelease-1>", self.end_resize)
@@ -159,6 +161,8 @@ class DraggableObject:
             # Update color based on lock status
             fill_color = "red" if self.locked else "blue"
             self.canvas.itemconfig(self.resize_handle, fill=fill_color)
+            # Ensure resize handle stays above the object
+            self.canvas.tag_raise(self.resize_handle)
 
     def on_release(self, event):
         self.is_dragging = False
@@ -211,9 +215,11 @@ class DraggableObject:
             self.canvas.tag_raise(self.resize_handle)
 
     def send_to_back(self):
+        # Send object to bottom
         self.canvas.tag_lower(self.id)
+        # Keep resize handle above the object
         if self.resize_handle:
-            self.canvas.tag_lower(self.resize_handle)
+            self.canvas.tag_raise(self.resize_handle)
 
     def toggle_lock(self):
         self.locked = not self.locked
