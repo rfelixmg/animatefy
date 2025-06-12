@@ -9,6 +9,7 @@ import queue
 
 # Video recording state
 is_paused = False
+is_fill_mode = False  # New state for fill mode
 pause_start_time = None
 temp_video_path = 'exports/temp_recording.mp4'
 FPS = 30  # Fixed FPS
@@ -50,51 +51,61 @@ def frame_writer_worker():
         video_writer.release()
         print(f"Recording complete. Total frames written: {frames_written}")
 
+def toggle_fill():
+    global is_fill_mode
+    is_fill_mode = not is_fill_mode
+    return is_fill_mode
+
+def is_fill_mode_active():
+    return is_fill_mode
+
 def export_jpg(max_width:int = 800, max_height:int = 800, padding:int = 20):
     # Create exports directory if it doesn't exist
     if not os.path.exists("exports"):
         os.makedirs("exports")
     
-    # Create a new image with canvas dimensions
-    img = Image.new('RGB', (max_width - 2*padding, max_height - 2*padding), 'white')
-    
-    # Sort objects by their canvas order (bottom to top)
-    sorted_objects = sorted(DraggableObject.instances, key=lambda obj: obj.get_canvas_order())
-    
-    # Get all objects from the canvas in correct order
-    for obj in sorted_objects:
-        # Get object position and image
-        x, y = obj.pos
-        # Adjust position by padding
-        x -= padding
-        y -= padding
-        # Get the current image state
-        current_img = obj.original_images[obj.state]
-        # Resize according to current scale
-        current_img = current_img.resize(
-            (int(current_img.width * obj.current_scale), 
-             int(current_img.height * obj.current_scale)),
-            Image.Resampling.LANCZOS
-        )
-        # Rotate if needed
-        if obj.rotation != 0:
-            current_img = current_img.rotate(obj.rotation, expand=True)
-        # Paste onto the main image
-        img.paste(current_img, (int(x), int(y)), current_img if current_img.mode == 'RGBA' else None)
-    
-    # Convert PIL Image to OpenCV format
-    cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    # If in fill mode, return a pure green screen
+    if is_fill_mode:
+        # Create a green screen image of the same size as the canvas
+        cv_img = np.full((max_height - 2*padding, max_width - 2*padding, 3), (0, 255, 0), dtype=np.uint8)
+    else:
+        # Create a new image with canvas dimensions
+        img = Image.new('RGB', (max_width - 2*padding, max_height - 2*padding), 'white')
+        
+        # Sort objects by their canvas order (bottom to top)
+        sorted_objects = sorted(DraggableObject.instances, key=lambda obj: obj.get_canvas_order())
+        
+        # Get all objects from the canvas in correct order
+        for obj in sorted_objects:
+            # Get object position and image
+            x, y = obj.pos
+            # Adjust position by padding
+            x -= padding
+            y -= padding
+            # Get the current image state
+            current_img = obj.original_images[obj.state]
+            # Resize according to current scale
+            current_img = current_img.resize(
+                (int(current_img.width * obj.current_scale), 
+                 int(current_img.height * obj.current_scale)),
+                Image.Resampling.LANCZOS
+            )
+            # Rotate if needed
+            if obj.rotation != 0:
+                current_img = current_img.rotate(obj.rotation, expand=True)
+            # Paste onto the main image
+            img.paste(current_img, (int(x), int(y)), current_img if current_img.mode == 'RGBA' else None)
+        
+        # Convert PIL Image to OpenCV format
+        cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     
     # If we're recording and not paused, add frame to queue
     global is_paused, frames_captured
     if not is_paused:
         frame_queue.put(cv_img.copy())
         frames_captured += 1
-        # if frames_captured % 30 == 0:  # Log every second (at 30fps)
-            # print(f"Frames captured: {frames_captured}")
     
     return cv_img
-    # print(f"Canvas exported as {filename}")
 
 def start_recording(max_width=800, max_height=800, padding=20):
     global recording_thread, should_stop_recording, frames_written, frames_captured

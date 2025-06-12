@@ -5,7 +5,7 @@ import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from .draggable_object import DraggableObject
-from .export import export_jpg, start_recording, stop_recording, save_video_to_path, toggle_pause, is_recording_paused, get_pause_duration, FPS
+from .export import export_jpg, start_recording, stop_recording, save_video_to_path, toggle_pause, is_recording_paused, get_pause_duration, FPS, toggle_fill, is_fill_mode_active
 
 # Constants
 # max_width, max_height = 1440, 800
@@ -35,6 +35,8 @@ def update_recording_status(status_label):
         if is_recording_paused():
             pause_duration = int(get_pause_duration())
             status_label.config(text=f"⏸️ Paused... {pause_duration}s")
+        elif is_fill_mode_active():
+            status_label.config(text="🎬 Fill Mode Active")
         else:
             elapsed = int(time.time() - record_start_time)
             blink = "●" if elapsed % 2 == 0 else " "
@@ -52,6 +54,8 @@ def on_key_press(event, canvas):
         DraggableObject.selected_object.toggle_lock()
     elif event.keysym.lower() == "p" and recording:
         toggle_pause()
+    elif event.keysym.lower() == "f" and recording:
+        toggle_fill()
     # Handle character hotkeys
     elif event.keysym in ["1", "2"]:
         obj = DraggableObject.get_by_hotkey(event.keysym)
